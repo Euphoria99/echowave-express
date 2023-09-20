@@ -5,6 +5,7 @@ const jwt = require("jsonwebtoken");
 const cors = require("cors");
 const cookieParser = require('cookie-parser')
 const bcrypt = require('bcryptjs')
+const ws = require('ws')
 
 const User = require("./models/User");
 const port = 4000;
@@ -88,6 +89,28 @@ app.get('/profile', (req, res) => {
   }
 })
 
-app.listen(port, () => {
+const server = app.listen(port, () => {
   console.log(`Server listening on port ${port}`);
 });
+
+
+const wss = new ws.WebSocketServer({server});
+wss.on('connection', (connection,req) => {
+  const cookies = req.headers.cookie;
+  if(cookies){
+    const tokenCookieString = cookies.split(';').find( str => str.startsWith('token='));
+    console.log('The split token', tokenCookieString);
+    if(tokenCookieString){
+      const token = tokenCookieString.split('=')[1];
+      console.log("🚀 ~ file: index.js:105 ~ wss.on ~ token:", token)
+      if(token){
+        jwt.verify(token, jwtSecret, {}, (err, userData) => {
+          if (err) throw err;
+          const {userId, username} = userData;
+          connection.userId = userId;
+          connection.username = username;
+        })
+      }
+    }
+  }
+})
