@@ -27,6 +27,12 @@ app.use((err, req, res, next) => {
 });
 
 dotenv.config();
+
+const server = app.listen(port, () => {
+  console.log(`Server listening on port ${port}`);
+});
+
+
 mongoose
   .connect(process.env.MONGO_URL)
   .then(() => console.log("mongoose connection successful"))
@@ -115,9 +121,11 @@ app.get("/profile", (req, res) => {
   }
 });
 
-const server = app.listen(port, () => {
-  console.log(`Server listening on port ${port}`);
-});
+
+app.get('/people', async (req, res) => {
+  const users = await User.find({}, { '_id':1 , username:1});
+  res.json(users)
+})
 
 const wss = new ws.WebSocketServer({ server });
 wss.on("connection", (connection, req) => {
