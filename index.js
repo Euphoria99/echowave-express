@@ -6,6 +6,7 @@ const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const bcrypt = require("bcryptjs");
 const ws = require("ws");
+const fs = require("fs");
 
 const User = require("./models/User");
 const Message = require("./models/Message");
@@ -20,6 +21,7 @@ app.use(
     origin: "http://localhost:3000",
   })
 );
+app.use('/uploads', express.static(__dirname + '/uploads'));
 
 app.use((err, req, res, next) => {
   console.error(err.stack);
@@ -194,12 +196,24 @@ wss.on("connection", (connection, req) => {
   connection.on("message", async (message) => {
     const messageData = JSON.parse(message.toString());
     console.log("The message-->", messageData);
-    const { recipient, text } = messageData;
-    if (recipient && text) {
+    const { recipient, text, file } = messageData;
+    let filename = null;
+    if(file){
+      const parts = file.name.split('.');
+      const ext = parts[parts.length - 1];
+      filename = Date.now() + '.'+ext;
+      const path = __dirname + '/uploads/' + 'echowave_'+filename;
+      const bufferData = new Buffer(file.data.split(',')[1],'base64')
+      fs.writeFile(path, bufferData, () => {
+        console.log('file saved:' +path);
+      });
+    }
+    if (recipient && (text || file)) {
       const messageDoc = await Message.create({
         sender: connection.userId,
         recipient,
         text,
+        file: file ? filename : null,
       });
       [...wss.clients]
         .filter((c) => c.userId === recipient)
@@ -210,6 +224,7 @@ wss.on("connection", (connection, req) => {
               text,
               sender: connection.userId,
               recipient,
+              file: file ? filename : null,
               _id: messageDoc._id,
             })
           )
