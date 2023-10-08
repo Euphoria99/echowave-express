@@ -149,6 +149,7 @@ wss.on("connection", (connection, req) => {
     connection.ping()
     connection.deathTimer = setTimeout( () => {
       connection.isAlive = false;
+      clearInterval(connection.timer);
       connection.terminate();
       notifyAboutOnlinePeople();
       // console.log('dead')
@@ -228,3 +229,7 @@ app.get('/messages/:userId', async (req, res) => {
   }).sort({createdAt : 1});
   res.json(messages)
 })
+
+app.post('/logout', (req, res) => {
+  res.cookie('token', '', {sameSite: 'none', secure: true} ).json('Ok')
+} )
