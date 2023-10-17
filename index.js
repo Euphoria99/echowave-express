@@ -168,10 +168,10 @@ wss.on("connection", (connection, req) => {
     const tokenCookieString = cookies
       .split(";")
       .find((str) => str.startsWith("token="));
-    console.log("The split token", tokenCookieString);
+    // console.log("The split token", tokenCookieString);
     if (tokenCookieString) {
       const token = tokenCookieString.split("=")[1];
-      console.log("🚀 ~ file: index.js:105 ~ wss.on ~ token:", token);
+      // console.log("🚀 ~ file: index.js:105 ~ wss.on ~ token:", token);
       if (token) {
         jwt.verify(token, jwtSecret, {}, (err, userData) => {
           if (err) throw err;
@@ -187,15 +187,15 @@ wss.on("connection", (connection, req) => {
   //notify everyone about online people(when someone connects)
   notifyAboutOnlinePeople();
 
-  console.log(
-    "no of clients",
-    [...wss.clients].map((c) => c.username)
-  );
+  // console.log(
+  //   "no of clients",
+  //   [...wss.clients].map((c) => c.username)
+  // );
 
 
   connection.on("message", async (message) => {
     const messageData = JSON.parse(message.toString());
-    console.log("The message-->", messageData);
+    // console.log("The message-->", messageData);
     const { recipient, text, file } = messageData;
     let filename = null;
     if(file){
