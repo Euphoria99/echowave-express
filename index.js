@@ -1,4 +1,4 @@
-const dotenv = require('dotenv')
+const dotenv = require("dotenv");
 const express = require("express");
 const mongoose = require("mongoose");
 const jwt = require("jsonwebtoken");
@@ -11,11 +11,6 @@ const fs = require("fs");
 const User = require("./models/User");
 const Message = require("./models/Message");
 const port = 4000;
-
-//
-const profileRoute = require('./routes/profileRoute');
-const peopleRoute = require('./routes/peopleRoute');
-const logoutRoute = require('./routes/logoutRoute');
 
 const app = express();
 app.use(express.json());
@@ -41,11 +36,10 @@ const server = app.listen(port, () => {
 
 
 mongoose
-  .connect("mongodb+srv://pavan:pavan@echowave.hozzgjt.mongodb.net/echowavechat?retryWrites=true&w=majority", { useNewUrlParser: true, useUnifiedTopology: true })
+  .connect(process.env.MONGO_URL)
   .then(() => console.log("mongoose connection successful"))
   .catch((err) => console.log("mongoose error", err));
-// const jwtSecret = process.env.JWT_SECRET;
-const jwtSecret = 'hjbhjsdbagajndafbfbfb';
+const jwtSecret = process.env.JWT_SECRET;
 const bcryptSalt = bcrypt.genSaltSync(10);
 
 app.get("/", (req, res) => {
@@ -117,18 +111,23 @@ app.post("/login", async (req, res) => {
   }
 });
 
-// app.get("/profile", (req, res) => {
-//   const token = req.cookies?.token;
-//   if (token) {
-//     jwt.verify(token, jwtSecret, {}, (err, userData) => {
-//       if (err) throw err;
-//       res.json(userData);
-//     });
-//   } else {
-//     res.status(401).json("no token");
-//   }
-// });
+app.get("/profile", (req, res) => {
+  const token = req.cookies?.token;
+  if (token) {
+    jwt.verify(token, jwtSecret, {}, (err, userData) => {
+      if (err) throw err;
+      res.json(userData);
+    });
+  } else {
+    res.status(401).json("no token");
+  }
+});
 
+
+app.get('/people', async (req, res) => {
+  const users = await User.find({}, { '_id':1 , username:1});
+  res.json(users)
+})
 
 const wss = new ws.WebSocketServer({ server });
 wss.on("connection", (connection, req) => {
@@ -246,10 +245,6 @@ app.get('/messages/:userId', async (req, res) => {
   res.json(messages)
 })
 
-
-///
-app.use("/profile", profileRoute);
-
-app.use("/people", peopleRoute);
-
-app.use("/logout", logoutRoute)
+app.post('/logout', (req, res) => {
+  res.cookie('token', '', {sameSite: 'none', secure: true} ).json('Ok')
+} )
