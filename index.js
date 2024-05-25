@@ -21,6 +21,8 @@ app.use(
     origin: "http://localhost:3000",
   })
 );
+
+//endpoint - file upload
 app.use('/uploads', express.static(__dirname + '/uploads'));
 
 app.use((err, req, res, next) => {
@@ -42,6 +44,7 @@ mongoose
 const jwtSecret = process.env.JWT_SECRET;
 const bcryptSalt = bcrypt.genSaltSync(10);
 
+//endpoint - home
 app.get("/", (req, res) => {
   res.json("Hello world");
 });
@@ -60,8 +63,8 @@ async function getUserDataFromRequest(req) {
   });
 }
 
+//endpoint - register
 app.post("/register", async (req, res) => {
-  console.log("called");
   const { username, password } = req.body;
   try {
     const hashedPassword = bcrypt.hashSync(password, bcryptSalt);
@@ -86,31 +89,43 @@ app.post("/register", async (req, res) => {
     );
   } catch (err) {
     if (err) throw err;
-    res.status(500).json("error");
+    res.status(500).json({ message: "Internal server error" });
   }
 });
 
+//endpoint - login
 app.post("/login", async (req, res) => {
-  const { username, password } = req.body;
-  const foundUser = await User.findOne({ username });
-  if (foundUser) {
-    const passOk = bcrypt.compareSync(password, foundUser.password);
-    if (passOk) {
-      jwt.sign(
-        { userId: foundUser._id, username },
-        jwtSecret,
-        {},
-        (err, token) => {
-          if (err) throw err;
-          res.cookie("token", token, { sameSite: "none", secure: true }).json({
-            id: foundUser._id,
-          });
-        }
-      );
+  try {
+    const { username, password } = req.body;
+    const foundUser = await User.findOne({ username });
+    
+    if (!foundUser || !bcrypt.compareSync(password, foundUser.password)) {
+      // Generic error message for both username not found and incorrect password
+      return res.status(401).json({ message: "Username or password is incorrect" });
     }
+
+    jwt.sign(
+      { userId: foundUser._id, username },
+      jwtSecret,
+      {},
+      (err, token) => {
+        if (err) {
+          // Error in JWT signing
+          return res.status(500).json({ message: "Internal server error" });
+        }
+        res.cookie("token", token, { sameSite: "none", secure: true }).json({
+          id: foundUser._id,
+        });
+      }
+    );
+  } catch (error) {
+    // Handle any unexpected errors
+    console.error("Error during login:", error);
+    res.status(500).json({ message: "Internal server error" });
   }
 });
 
+//endpoint - currently profile
 app.get("/profile", (req, res) => {
   const token = req.cookies?.token;
   if (token) {
@@ -119,14 +134,19 @@ app.get("/profile", (req, res) => {
       res.json(userData);
     });
   } else {
-    res.status(401).json("no token");
+    res.status(401).json({ message: "No Token" });
   }
 });
 
 
+//endpoint - people
 app.get('/people', async (req, res) => {
-  const users = await User.find({}, { '_id':1 , username:1});
-  res.json(users)
+  try {
+    const users = await User.find({}, { '_id':1 , username:1});
+    res.json(users)
+  } catch {
+    res.status(404).json({message:"No Users Found"})
+  }
 })
 
 const wss = new ws.WebSocketServer({ server });
@@ -233,18 +253,24 @@ wss.on("connection", (connection, req) => {
   });
 });
 
+//endpoint - messages by user id
 app.get('/messages/:userId', async (req, res) => {
-  const {userId} = req.params;
-  const userData = await getUserDataFromRequest(req);
-  const ourUserId = userData.userId;
-  // console.log('The user ids', {userId, ourUserId})
-  const messages =  await Message.find({
-    sender:{$in : [userId, ourUserId]} ,
-    recipient: {$in : [userId, ourUserId]}
-  }).sort({createdAt : 1});
-  res.json(messages)
+  try{
+    const {userId} = req.params;
+    const userData = await getUserDataFromRequest(req);
+    const ourUserId = userData.userId;
+    // console.log('The user ids', {userId, ourUserId})
+    const messages =  await Message.find({
+      sender:{$in : [userId, ourUserId]} ,
+      recipient: {$in : [userId, ourUserId]}
+    }).sort({createdAt : 1});
+    res.status(200).json(messages)
+  }catch{
+    res.status(404).json({message:"User Id is incorrect or doesn't exists"})
+  }
 })
 
+//endpoint - logout
 app.post('/logout', (req, res) => {
   res.cookie('token', '', {sameSite: 'none', secure: true} ).json('Ok')
 } )
