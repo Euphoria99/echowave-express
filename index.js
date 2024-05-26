@@ -11,7 +11,6 @@ const fs = require("fs");
 const User = require("./models/User");
 const Message = require("./models/Message");
 const port = 4000;
-
 const app = express();
 app.use(express.json());
 app.use(cookieParser());
@@ -46,7 +45,10 @@ const bcryptSalt = bcrypt.genSaltSync(10);
 
 //endpoint - home
 app.get("/", (req, res) => {
-  res.json("Hello world");
+  res.status(200).json({"app-name": "echowave-express",
+    "description": "backend for echowave chatapp",
+    "status": "running"
+  });
 });
 
 async function getUserDataFromRequest(req) {
