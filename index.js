@@ -7,6 +7,7 @@ const cookieParser = require("cookie-parser");
 const bcrypt = require("bcryptjs");
 const ws = require("ws");
 const fs = require("fs");
+const path = require('path');
 
 const User = require("./models/User");
 const Message = require("./models/Message");
@@ -17,7 +18,8 @@ app.use(cookieParser());
 app.use(
   cors({
     credentials: true,
-    origin: "http://localhost:3000",
+    origin: process.env.CLIENT_URL,
+    debug:true
   })
 );
 
@@ -32,6 +34,7 @@ app.use((err, req, res, next) => {
 dotenv.config();
 
 const server = app.listen(port, () => {
+  console.log(process.env.CLIENT_URL)
   console.log(`Server listening on port ${port}`);
 });
 
@@ -44,11 +47,22 @@ const jwtSecret = process.env.JWT_SECRET;
 const bcryptSalt = bcrypt.genSaltSync(10);
 
 //endpoint - home
-app.get("/", (req, res) => {
+app.get("/app-info", (req, res) => {
   res.status(200).json({"app-name": "echowave-express",
     "description": "backend for echowave chatapp",
+    "documentation":"documentation done using redoc",
     "status": "running"
   });
+});
+
+// Serve ReDoc
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'redoc.html'));
+});
+
+// Serve OpenAPI spec
+app.get('/openapi.yaml', (req, res) => {
+  res.sendFile(path.join(__dirname, 'openapi.yaml'));
 });
 
 async function getUserDataFromRequest(req) {
@@ -115,8 +129,9 @@ app.post("/login", async (req, res) => {
           // Error in JWT signing
           return res.status(500).json({ message: "Internal server error" });
         }
-        res.cookie("token", token, { sameSite: "none", secure: true }).json({
+        res.cookie("token", token, { sameSite: "none", secure: true }).status(200).json({
           id: foundUser._id,
+          message: "User found"
         });
       }
     );
@@ -274,5 +289,5 @@ app.get('/messages/:userId', async (req, res) => {
 
 //endpoint - logout
 app.post('/logout', (req, res) => {
-  res.cookie('token', '', {sameSite: 'none', secure: true} ).json('Ok')
+  res.cookie('token', '', {sameSite: 'none', secure: true} ).status(200).json({message:"User is logged out"})
 } )

@@ -1,0 +1,200 @@
+openapi: 3.0.0
+info:
+  title: EchoWave Express API
+  description: Backend for EchoWave chat app
+  version: 1.0.0
+servers:
+  - url: http://localhost:4000
+paths:
+  /app-info:
+    get:
+      summary: Check the information of the app
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  app-name:
+                    type: string
+                    example: echowave-express
+                  description:
+                    type: string
+                    example: backend for echowave chatapp
+                  documenation:
+                    type: string
+                    example: use /redoc to view redoc documentation
+                  status:
+                    type: string
+                    example: running
+  /register:
+    post:
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: User created successfully
+        '500':
+          description: Internal server error
+  /login:
+    post:
+      summary: Log in a user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: User logged in successfully
+        '401':
+          description: Username or password is incorrect
+        '500':
+          description: Internal server error
+          
+  /profile:
+    get:
+      summary: Get user profile
+      responses:
+        '200':
+          description: User profile data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  userId:
+                    type: string
+                    example: "66561769181"
+                  username:
+                    type: string
+                    example: "somechat_user"
+                  iat:
+                    type: integer
+                    example: 1717346462
+        '401':
+          description: No token provided
+  /people:
+   get:
+     summary: Get all users
+     responses:
+       '200':
+         description: A list of users
+         content:
+           application/json:
+             schema:
+               type: array
+               items:
+                 type: object
+                 properties:
+                   _id:
+                     type: string
+                     example: "66561769181"
+                   username:
+                     type: string
+                     example: "somechat_user"
+                   iat:
+                     type: integer
+                     example: 1717346462
+                #  required:
+                #    - _id
+                #    - username
+       '404':
+         description: No users found
+
+  
+  /messages/{userId}:
+    get:
+      summary: Get messages by user ID
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: A list containing a single message
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    _id:
+                      type: string
+                      example: "6651fa78ad5f0ee28bsaa23bc1"
+                    sender:
+                      type: string
+                      example: "6651ddd611aa03bhkwbf3d3c8fe"
+                    recipient:
+                      type: string
+                      example: "6651de6311ajhwka03bbf3d3c902"
+                    text:
+                      type: string
+                      example: "hii bro"
+                    file:
+                      type: string
+                      example: null
+                    createdAt:
+                      type: string
+                      format: date-time
+                      example: "2024-05-25T14:49:28.440Z"
+                    updatedAt:
+                      type: string
+                      format: date-time
+                      example: "2024-05-25T14:49:28.440Z"
+                    __v:
+                      type: integer
+                      example: 0
+        '404':
+          description: User ID is incorrect or doesn't exist
+  /logout:
+    post:
+      summary: Log out the user
+      responses:
+        '200':
+          description: User is logged out
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "User is logged out"
+        '401':
+          description: No token provided
+  /uploads/{filename}:
+    get:
+      summary: Access uploaded files
+      parameters:
+        - in: path
+          name: filename
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: File content
+        '404':
+          description: File not found
